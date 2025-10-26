@@ -11,9 +11,9 @@ Steps taken:
 3. Using gradient descent to minimize Mean squared error cost function [J = (1/2m)*summation(f_wb - y)^2]  
 4. Using R-squared, Adjusted R-squared, mean square value and root mean square value to find most efficient alpha, iterations.
 
-Final results for training :
-Cost=0.004642 | R^2=0.9908 | Adjusted R^2=0.9908 | Mean squared error=0.0092 | Root Mean squared error=0.095
-Final results for testing :
+Final results for training :   
+Cost=0.004642 | R^2=0.9908 | Adjusted R^2=0.9908 | Mean squared error=0.0092 | Root Mean squared error=0.095  
+Final results for testing :   
 Cost=0.020663 | R^2=0.9587 | Adjusted R^2=0.9587 | Mean squared error=0.0413 | Root Mean squared error=0.2033
 ________________________________________________________________________________
 * Since RMSE and MSE are much greater for testing data than training data,model might be overfitted.
