@@ -15,7 +15,7 @@ Final results for training :
 Cost=0.004642 | R^2=0.9908 | Adjusted R^2=0.9908 | Mean squared error=0.0092 | Root Mean squared error=0.095
 Final results for testing :
 Cost=0.020663 | R^2=0.9587 | Adjusted R^2=0.9587 | Mean squared error=0.0413 | Root Mean squared error=0.2033
----------------------------------------------------
+________________________________________________________________________________
 * Since RMSE and MSE are much greater for testing data than training data,model might be overfitted.
 * Since there is minimal difference in R^2 and adjusted R^2, therefore there is no issue with the features. Also, while the difference in MSE is high, both continue to go down with increase in epochs and learning rate, so difference might be amplified since values are already pretty small.
 * Despite this, predictions still show very high accuracy for both training and testing data as shown by the high R^2 in both cases.
