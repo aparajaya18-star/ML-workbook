@@ -12,6 +12,7 @@ Repository containing machine learning tasks
 - **Task 3.1** – Ensemble Methods  
 - **Task 3.3** – Clustering  
 - **Task 4.0** – Neural Networks  
+- **Task 4.1** – Convolutional Neural Networks 
 
 ---
 
