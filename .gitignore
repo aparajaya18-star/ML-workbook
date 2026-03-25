@@ -1,3 +1,21 @@
 # Ignore dataset folders
 Data/
 .ipynb_checkpoints
+# Compiled files
+*.o
+*.out
+*.exe
+
+# ROS build files
+build/
+install/
+log/
+
+# VS Code
+.vscode/
+
+# Python cache (for your CNN task)
+__pycache__/
+*.pyc
+*.deb
+*.gpg
