@@ -1,5 +1,6 @@
 # Ignore dataset folders
 Data/
+data/
 .ipynb_checkpoints
 # Compiled files
 *.o
