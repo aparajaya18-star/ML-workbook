@@ -20,7 +20,8 @@ struct AStarNode {
 
 	float calculateHeuristic(AStarNode* endNode)
 	{
-		return abs(x - endNode->x) + abs(y - endNode->y); //Manhattan distance 
+		return sqrt(pow(x - endNode->x, 2) + pow(y - endNode->y, 2)) * 10;
+		// Euclidean distance multiplied by 10 to match movement costs
 	}
 
 	bool isWalkable(vector<vector<int>>& grid)
@@ -35,6 +36,8 @@ struct AStarNode {
 struct CompareNode {
 	bool operator()(AStarNode* a, AStarNode* b)
 	{
+		if (a->fCost == b->fCost)
+            return a->hCost > b->hCost; // prefer closer to goal
 		return a->fCost > b->fCost; // Min-heap based on fCost
 	}
 };
@@ -45,16 +48,18 @@ vector<AStarNode*> aStar(
     AStarNode* endNode
 )
 {
-	vector<AStarNode*> openList;
+	priority_queue<AStarNode*, vector<AStarNode*>, CompareNode> openList;
 	set<pair<int, int>> closedList;
 
-	openList.push_back(startNode);
+	openList.push(startNode);
 
 	while (!openList.empty())
 	{
-		sort(openList.begin(), openList.end(), CompareNode());
-		AStarNode* currentNode = openList.front();
-		openList.erase(openList.begin());
+		AStarNode* currentNode = openList.top();
+		openList.pop();
+
+		if (closedList.count({currentNode->x, currentNode->y}) > 0)
+    		continue; // Skip if already processed
 
 		// Check if we have reached the end node
 		if (currentNode->x == endNode->x && currentNode->y == endNode->y)
@@ -71,32 +76,47 @@ vector<AStarNode*> aStar(
 
 		closedList.insert({currentNode->x, currentNode->y});
 
-		vector<pair<int, int>> directions = {{0, 1}, {1, 0}, {0, -1}, {-1, 0}};
+		vector<pair<int, int>> directions = {
+			{0, 1}, {1, 0}, {0, -1}, {-1, 0}, // Cardinal movements
+			{1, 1}, {1, -1}, {-1, 1}, {-1, -1} // Diagonal movements
+		};
 		for (auto dir : directions)
 		{
 			int newX = currentNode->x + dir.first;
 			int newY = currentNode->y + dir.second;
+
+			if (newX < 0 || newX >= (int)grid[0].size() ||
+				newY < 0 || newY >= (int)grid.size())
+				continue;
+
+			bool isDiagonal = (dir.first != 0 && dir.second != 0);
+			if (isDiagonal)
+			{
+				int x1 = currentNode->x + dir.first;
+				int y1 = currentNode->y;
+				int x2 = currentNode->x;
+				int y2 = currentNode->y + dir.second;
+
+				// Check if both adjacent cardinal cells are walkable for diagonal movement
+				if (grid[y1][x1] != 0 || grid[y2][x2] != 0)
+					continue;
+			}
+
 			AStarNode* neighbor = new AStarNode(newX, newY);
 
 			if (!neighbor->isWalkable(grid) || closedList.count({newX, newY}) > 0)
 				continue;
 
-			int tentativeGCost = currentNode->gCost + 1;
+			int moveCost = isDiagonal ? 14 : 10;
+			int tentativeGCost = currentNode->gCost + moveCost;
 
-			auto it = find_if(openList.begin(), openList.end(), [&](AStarNode* node) {
-				return node->x == newX && node->y == newY;
-			});
+			
+			neighbor->gCost = tentativeGCost;
+			neighbor->hCost = neighbor->calculateHeuristic(endNode);
+			neighbor->fCost = neighbor->gCost + neighbor->hCost;
+			neighbor->parent = currentNode;
 
-			if (it == openList.end() || tentativeGCost < (*it)->gCost)
-			{
-				neighbor->gCost = tentativeGCost;
-				neighbor->hCost = neighbor->calculateHeuristic(endNode);
-				neighbor->fCost = neighbor->gCost + neighbor->hCost;
-				neighbor->parent = currentNode;
-
-				if (it == openList.end())
-					openList.push_back(neighbor);
-			}
+			openList.push(neighbor);
 		}
 	}
 
@@ -135,9 +155,7 @@ private:
         int height = msg->info.height;
 
         vector<vector<int>> grid(height, vector<int>(width));
-		RCLCPP_INFO(this->get_logger(), "Start value: %d", grid[0][0]);
-		RCLCPP_INFO(this->get_logger(), "Goal value: %d", grid[height-1][width-1]);
-
+		
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -146,6 +164,9 @@ private:
                 grid[y][x] = (msg->data[i] == 0) ? 0 : 1;
             }
         }
+
+		RCLCPP_INFO(this->get_logger(), "Start value: %d", grid[0][0]);
+		RCLCPP_INFO(this->get_logger(), "Goal value: %d", grid[height-1][width-1]);
 
         AStarNode* start = new AStarNode(0, 0);
         AStarNode* goal = new AStarNode(width - 1, height - 1);
@@ -157,20 +178,25 @@ private:
         path_msg.header.frame_id = "map";
 		path_msg.header.stamp = this->now();
 
-        for (auto node : path)
-        {
-            geometry_msgs::msg::PoseStamped pose;
+        double resolution = msg->info.resolution;
+		double origin_x = msg->info.origin.position.x;
+		double origin_y = msg->info.origin.position.y;
+
+		for (auto node : path)
+		{
+			geometry_msgs::msg::PoseStamped pose;
 
 			pose.header.frame_id = "map";
 			pose.header.stamp = this->now();
 
-			pose.pose.position.x = node->x;
-			pose.pose.position.y = node->y;
+			pose.pose.position.x = origin_x + node->x * resolution;
+			pose.pose.position.y = origin_y + node->y * resolution;
 			pose.pose.position.z = 0.0;
 
 			pose.pose.orientation.w = 1.0;
-            path_msg.poses.push_back(pose);
-        }
+
+			path_msg.poses.push_back(pose);
+		}
 
 		RCLCPP_INFO(this->get_logger(), "Publishing path...");
         path_pub_->publish(path_msg);
