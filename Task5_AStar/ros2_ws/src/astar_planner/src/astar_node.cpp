@@ -148,6 +148,35 @@ private:
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
 
+	void publishPath(const vector<AStarNode*>& path,
+                     const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
+    {
+        nav_msgs::msg::Path path_msg;
+        path_msg.header.frame_id = "map";
+        path_msg.header.stamp = this->now();
+
+        double resolution = msg->info.resolution;
+        double origin_x = msg->info.origin.position.x;
+        double origin_y = msg->info.origin.position.y;
+
+        for (auto node : path)
+        {
+            geometry_msgs::msg::PoseStamped pose;
+
+            pose.header.frame_id = "map";
+            pose.header.stamp = this->now();
+
+            pose.pose.position.x = origin_x + node->x * resolution;
+            pose.pose.position.y = origin_y + node->y * resolution;
+            pose.pose.orientation.w = 1.0;
+
+            path_msg.poses.push_back(pose);
+        }
+
+        RCLCPP_INFO(this->get_logger(), "Publishing path...");
+        path_pub_->publish(path_msg);
+    }
+
     void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
     {
 		RCLCPP_INFO(this->get_logger(), "Map received!");
@@ -161,45 +190,101 @@ private:
             for (int x = 0; x < width; x++)
             {
                 int i = y * width + x;
-                grid[y][x] = (msg->data[i] == 0) ? 0 : 1;
+                grid[y][x] = (msg->data[i] >= 0 && msg->data[i] < 50) ? 0 : 1;
             }
         }
 
-		RCLCPP_INFO(this->get_logger(), "Start value: %d", grid[0][0]);
-		RCLCPP_INFO(this->get_logger(), "Goal value: %d", grid[height-1][width-1]);
+		vector<pair<pair<int,int>, pair<int,int>>> corner_pairs = {
+			{{0,0}, {width-1,height-1}},
+			{{0,height-1}, {width-1,0}}
+		};
 
-        AStarNode* start = new AStarNode(0, 0);
-        AStarNode* goal = new AStarNode(width - 1, height - 1);
-
-        auto path = aStar(grid, start, goal);
-		RCLCPP_INFO(this->get_logger(), "Path size: %ld", path.size());
-
-        nav_msgs::msg::Path path_msg;
-        path_msg.header.frame_id = "map";
-		path_msg.header.stamp = this->now();
-
-        double resolution = msg->info.resolution;
-		double origin_x = msg->info.origin.position.x;
-		double origin_y = msg->info.origin.position.y;
-
-		for (auto node : path)
+		for (auto& pair : corner_pairs)
 		{
-			geometry_msgs::msg::PoseStamped pose;
+			auto [sx, sy] = pair.first;
+			auto [gx, gy] = pair.second;
 
-			pose.header.frame_id = "map";
-			pose.header.stamp = this->now();
+			if (grid[sy][sx] == 0 && grid[gy][gx] == 0)
+			{
+				AStarNode* start = new AStarNode(sx, sy);
+				AStarNode* goal  = new AStarNode(gx, gy);
 
-			pose.pose.position.x = origin_x + node->x * resolution;
-			pose.pose.position.y = origin_y + node->y * resolution;
-			pose.pose.position.z = 0.0;
+				auto path = aStar(grid, start, goal);
 
-			pose.pose.orientation.w = 1.0;
-
-			path_msg.poses.push_back(pose);
+				if (!path.empty())
+				{
+					RCLCPP_INFO(this->get_logger(), "Using corner-based path");
+					publishPath(path, msg);
+					RCLCPP_INFO(this->get_logger(), "Path size: %lu", path.size());
+					return;
+				}
+			}
 		}
 
-		RCLCPP_INFO(this->get_logger(), "Publishing path...");
-        path_pub_->publish(path_msg);
+		vector<pair<int,int>> boundary_points;
+
+		// Collect all free boundary cells
+		for (int y = 0; y < height; y++)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				if (x == 0 || y == 0 || x == width-1 || y == height-1)
+				{
+					if (grid[y][x] == 0)
+						boundary_points.push_back({x,y});
+				}
+			}
+		}
+
+		if (boundary_points.size() < 2)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Not enough boundary openings!");
+			return;
+		}
+		else if (boundary_points.size() > 200)
+		{
+			random_shuffle(boundary_points.begin(), boundary_points.end());
+			boundary_points.resize(200); // Limit to 200 points for efficiency
+		}
+
+		vector<AStarNode*> best_path;
+		AStarNode* final_start = nullptr;
+		AStarNode* final_goal = nullptr;
+
+		for (size_t i = 0; i < boundary_points.size(); i++)
+		{
+			for (size_t j = i+1; j < boundary_points.size(); j++)
+			{
+				AStarNode* start = new AStarNode(boundary_points[i].first, boundary_points[i].second);
+				AStarNode* goal  = new AStarNode(boundary_points[j].first, boundary_points[j].second);
+
+				int dx = abs(start->x - goal->x);
+				int dy = abs(start->y - goal->y);
+
+				if (dx + dy < 50) continue; // skip close points
+				vector<AStarNode*> current_path = aStar(grid, start, goal);
+
+				if (!current_path.empty() && current_path.size() > best_path.size())
+				{
+					best_path = current_path;
+					final_start = start;
+					final_goal = goal;
+
+					RCLCPP_INFO(this->get_logger(), "Valid path found between (%d,%d) and (%d,%d)", final_start->x, final_start->y, final_goal->x, final_goal->y);
+				}
+			}
+		}
+
+		if (best_path.empty())
+		{
+			RCLCPP_ERROR(this->get_logger(), "No valid path found!");
+			return;
+		}
+
+		vector<AStarNode*> path = best_path;
+
+		RCLCPP_INFO(this->get_logger(), "Path size: %lu", path.size());
+		publishPath(path, msg);
     }
 };
 
