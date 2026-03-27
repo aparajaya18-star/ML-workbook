@@ -11,7 +11,7 @@ class ChatPublisher : public rclcpp::Node
 
 public:
     ChatPublisher(const std::string &username) 
-    : Node("chat_publisher", username_(username))
+    : Node("chat_publisher"), username_(username)
     {
         //Initializing the publisher 
         publisher_ = this->create_publisher<std_msgs::msg::String>("chat", 10);
@@ -26,9 +26,11 @@ private:
     void sendMessage(const std::string &text)
     {
         auto msg = std_msgs::msg::String();
-        msg.data = text;
 
-        std::cout << "[" << username_ << "]: " << msg.data << std::endl;
+        msg.data = "[" + username_ + "]: " + text;
+
+        std::cout << msg.data << std::endl;
+
         RCLCPP_INFO(this->get_logger(), "Sending message: '%s'", msg.data.c_str());
         publisher_->publish(msg);
     }
