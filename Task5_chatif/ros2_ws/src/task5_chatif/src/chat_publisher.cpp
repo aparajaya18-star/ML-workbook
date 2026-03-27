@@ -10,7 +10,8 @@ class ChatPublisher : public rclcpp::Node
     std::thread input_thread_;
 
 public:
-    ChatPublisher() : Node("chat_publisher")
+    ChatPublisher(const std::string &username) 
+    : Node("chat_publisher", username_(username))
     {
         //Initializing the publisher 
         publisher_ = this->create_publisher<std_msgs::msg::String>("chat", 10);
@@ -21,11 +22,13 @@ public:
     }
 
 private:
+    std::string username_;
     void sendMessage(const std::string &text)
     {
         auto msg = std_msgs::msg::String();
         msg.data = text;
 
+        std::cout << "[" << username_ << "]: " << msg.data << std::endl;
         RCLCPP_INFO(this->get_logger(), "Sending message: '%s'", msg.data.c_str());
         publisher_->publish(msg);
     }
@@ -52,8 +55,17 @@ private:
 
 int main(int argc, char *argv[])
 {
-    rclcpp::init(argc, argv); // Initialize the ROS 2 system
-    rclcpp::spin(std::make_shared<ChatPublisher>()); // Keep the node running to allow message publishing
-    rclcpp::shutdown(); // Cleanly shutdown the ROS 2 system
+    rclcpp::init(argc, argv);
+
+    std::string username = "User";
+
+    if (argc > 1) {
+        username = argv[1];
+    }
+
+    auto node = std::make_shared<ChatPublisher>(username);
+
+    rclcpp::spin(node);
+    rclcpp::shutdown();
     return 0;
 }
