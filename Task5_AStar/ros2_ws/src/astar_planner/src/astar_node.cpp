@@ -48,8 +48,8 @@ vector<AStarNode*> aStar(
     AStarNode* endNode
 )
 {
-	priority_queue<AStarNode*, vector<AStarNode*>, CompareNode> openList;
-	set<pair<int, int>> closedList;
+	priority_queue<AStarNode*, vector<AStarNode*>, CompareNode> openList; //nodes to be evaluated
+	set<pair<int, int>> closedList; //nodes already evaluated (using set for O(1) lookups)
 
 	openList.push(startNode);
 
@@ -86,7 +86,7 @@ vector<AStarNode*> aStar(
 			int newY = currentNode->y + dir.second;
 
 			if (newX < 0 || newX >= (int)grid[0].size() ||
-				newY < 0 || newY >= (int)grid.size())
+				newY < 0 || newY >= (int)grid.size())		// Check if new position is within grid bounds
 				continue;
 
 			bool isDiagonal = (dir.first != 0 && dir.second != 0);
@@ -97,19 +97,19 @@ vector<AStarNode*> aStar(
 				int x2 = currentNode->x;
 				int y2 = currentNode->y + dir.second;
 
-				// Check if both adjacent cardinal cells are walkable for diagonal movement
+				// Check if adjacent cardinal cells are walkable to prevent cutting corners
 				if (grid[y1][x1] != 0 || grid[y2][x2] != 0)
 					continue;
 			}
 
 			AStarNode* neighbor = new AStarNode(newX, newY);
 
+			// Check if the neighbor is walkable and not in the closed list
 			if (!neighbor->isWalkable(grid) || closedList.count({newX, newY}) > 0)
 				continue;
 
-			int moveCost = isDiagonal ? 14 : 10;
-			int tentativeGCost = currentNode->gCost + moveCost;
-
+			int moveCost = isDiagonal ? 14 : 10;	// Diagonal moves cost more (approx. sqrt(2) * 10)
+			int tentativeGCost = currentNode->gCost + moveCost;	// Tentative gCost to reach the neighbor
 			
 			neighbor->gCost = tentativeGCost;
 			neighbor->hCost = neighbor->calculateHeuristic(endNode);
@@ -128,9 +128,9 @@ class AStarPlanner : public rclcpp::Node
 public:
     AStarPlanner() : Node("astar_planner")
     {
-        rclcpp::QoS qos(rclcpp::KeepLast(10));
-		qos.transient_local();  // <-- IMPORTANT
-		qos.reliable();
+        rclcpp::QoS qos(rclcpp::KeepLast(10));	// Keep the last 10 messages in the queue
+		qos.transient_local();  // Ensure new subscribers receive the last published map immediately
+		qos.reliable();	// Ensure reliable delivery of messages
 
 		sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
 			"/map", qos,
@@ -145,8 +145,8 @@ public:
     }
 
 private:
-    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
+    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr sub_;	//init above in constructor
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;	//init above in constructor
 
 	void publishPath(const vector<AStarNode*>& path,
                      const nav_msgs::msg::OccupancyGrid::SharedPtr msg)
@@ -185,6 +185,7 @@ private:
 
         vector<vector<int>> grid(height, vector<int>(width));
 		
+		// Convert the 1D occupancy grid data into a 2D grid representation
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -199,6 +200,7 @@ private:
 			{{0,height-1}, {width-1,0}}
 		};
 
+		// First try paths between opposite corners of the map
 		for (auto& pair : corner_pairs)
 		{
 			auto [sx, sy] = pair.first;
@@ -221,6 +223,7 @@ private:
 			}
 		}
 
+		// If corner-based paths fail, collect all free boundary cells and try paths between them
 		vector<pair<int,int>> boundary_points;
 
 		// Collect all free boundary cells
@@ -236,6 +239,7 @@ private:
 			}
 		}
 
+		// If there are too few or too many boundary points, handle accordingly
 		if (boundary_points.size() < 2)
 		{
 			RCLCPP_ERROR(this->get_logger(), "Not enough boundary openings!");
@@ -244,13 +248,14 @@ private:
 		else if (boundary_points.size() > 200)
 		{
 			random_shuffle(boundary_points.begin(), boundary_points.end());
-			boundary_points.resize(200); // Limit to 200 points for efficiency
+			boundary_points.resize(200); 
 		}
 
 		vector<AStarNode*> best_path;
 		AStarNode* final_start = nullptr;
 		AStarNode* final_goal = nullptr;
 
+		// Try paths between all pairs of boundary points and select the longest valid path
 		for (size_t i = 0; i < boundary_points.size(); i++)
 		{
 			for (size_t j = i+1; j < boundary_points.size(); j++)
