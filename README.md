@@ -15,6 +15,7 @@ Repository containing machine learning tasks
 - **Task 4.1** – Convolutional Neural Networks 
 - **Task 5.0** – A* path-finding algorithm      
 - **Task 5.1** – Chat Interface         
+- **Task 6.0** – Volleyball Tracker (OpenCV)              
 
 ---
 
