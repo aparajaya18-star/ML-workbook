@@ -4,3 +4,8 @@
     - Cloud cover       - NA
     - Lens Distortion   - NA
     - Blur              - Somewhat
+* Current Pipeline:
+    - Find features using ORB
+    - Matching features using BFmatcher
+    - Sorting matches using Lowe's ratio
+    - Display similarity graph using NetworkX
