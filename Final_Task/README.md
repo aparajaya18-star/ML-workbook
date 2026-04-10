@@ -11,7 +11,10 @@
     - Matching features using BFmatcher    
     - Sorting matches using Lowe's ratio
     - RANSAC for geometric verification
-    - Display similarity graph using NetworkX       
+    - Display similarity graph using NetworkX  
+    - Use Community detection to group images into regions  
+    - Use MaxST to find stitching order  
+    - Warp and blend images using homography  
 
 ### Concepts/Notes  
 * BFMatcher: Compares every descriptor in 2 images and finds best match (Using Hamming distance for ORB [descriptor type = Binary])    
@@ -25,4 +28,8 @@
     - Count inliers (good matches that fit H)
     - Repeat many times
     - Pick the H with maximum inliers
-* Minimal Spanning Tree (MST): 
+* Maximum Spanning Tree (MaxST):    
+    - A spanning tree is a subset of Graph G, such that all the vertices are connected using minimum possible number of edges.
+    - ST has no cycles (evenly divide into regions)
+    - MaxST is ST with max weight ie ST with max no of outliers
+* BFS(Breadth First Search): Method to traverse a Tree such that all nodes present in the same level are traversed completely before traversing the next level.
