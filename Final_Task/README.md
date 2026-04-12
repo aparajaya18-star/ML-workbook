@@ -14,7 +14,8 @@
     - Display similarity graph using NetworkX  
     - Use Community detection to group images into regions  
     - Use MaxST to find stitching order  
-    - Warp and blend images using homography and Global canvas pre-computation (using corner projection)
+    - Warp images using homography and Global canvas pre-computation (using corner projection)
+    - Blend images using feather blending
 
 ### Concepts/Notes  
 * BFMatcher: Compares every descriptor in 2 images and finds best match (Using Hamming distance for ORB [descriptor type = Binary])    
