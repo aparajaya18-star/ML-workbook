@@ -7,7 +7,7 @@
     - Blur              - Somewhat
     - Size              - 10 to 40 images
 * Current Pipeline:
-    - Find features using ORB
+    - Find features using SIFT
     - Matching features using BFmatcher    
     - Sorting matches using Lowe's ratio
     - RANSAC for geometric verification
