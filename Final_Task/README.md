@@ -7,6 +7,7 @@
     - Blur              - Somewhat
     - Size              - 10 to 40 images
 * Current Pipeline:
+    - Image Stitching:
         - Find features using SIFT
         - Matching features using BFmatcher    
         - Sorting matches using Lowe's ratio
@@ -16,7 +17,9 @@
         - Use MaxST to find stitching order  
         - Warp images using homography and Global canvas pre-computation (using corner projection)
         - Blend images using feather blending
-        - Repeat the same for both regional and global      
+        - Repeat the same for both regional and global  
+    - Converting to 2D map:
+    - Road Segmentation:     
 
 
 ### Researched/Possible solutions:
