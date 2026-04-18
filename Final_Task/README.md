@@ -20,9 +20,9 @@
         - Repeat the same for both regional and global  
     - Converting to 2D map:
         - Check if map needs orthorectification (Check amount of black pixels near boundary)
-        - Detect warped rectangles in the image
+        - Detect warped boundary of the image
         - Apply homography to map image such that warped rectangle becomes true rectangle
-        - Recheck orthorectification and continue if successfull else repeat
+        - Recheck orthorectification and return original image if unsuccessful
     - Road Segmentation:     
 
 
