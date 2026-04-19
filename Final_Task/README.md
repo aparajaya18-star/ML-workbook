@@ -6,6 +6,7 @@
     - Lens Distortion   - NA
     - Blur              - Somewhat
     - Size              - 10 to 40 images
+* Recent attempts: Tried sliders as well as Image thresholding for road segmentation but both required a lot of tuning each time a different image was tested (Bad Generalization)
 * Current Pipeline:
     - Image Stitching:
         - Find features using SIFT
@@ -25,6 +26,13 @@
         - Recheck orthorectification and return original image if unsuccessful
     - Road Segmentation:     
 
+* Feature vector per patch — for each pixel, extract features from a small patch around it:
+* HSV mean and std (6 values)
+LBP histogram for texture (typically 10-26 values depending on settings)
+Sobel gradient magnitude mean and std (2 values)
+* Labels from DeepGlobe — each training image has a _mask.png. Roads are labeled as white (255,255,255), everything else black. You convert this to binary 0/1.
+* Training — sample balanced patches from DeepGlobe images (equal road/non-road), extract features, train Random Forest.
+* Inference — slide over your stitched map, extract same features per patch, predict road/non-road.
 
 ### Researched/Possible solutions:
 * Spatially Varying Warping
