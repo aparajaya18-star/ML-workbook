@@ -24,7 +24,10 @@
         - Detect warped boundary of the image
         - Apply homography to map image such that warped rectangle becomes true rectangle
         - Recheck orthorectification and return original image if unsuccessful
-    - Road Segmentation:     
+    - Road Segmentation:
+        - Ver 1: Using sliders
+        - Ver 2: Using Thresholding
+        - Ver 3: Using Random Forest     
 
 * Feature vector per patch — for each pixel, extract features from a small patch around it:
 * HSV mean and std (6 values)
