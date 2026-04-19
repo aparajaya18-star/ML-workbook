@@ -5,8 +5,12 @@ def nothing(x):
     pass
 
 # Load your topdown image
-image = cv2.imread('topdown_image.png')
-hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+image = cv2.imread('test_1.jpg')
+blurred_img = cv2.GaussianBlur(image, (5,5), 0)
+hsv = cv2.cvtColor(blurred_img, cv2.COLOR_BGR2HSV)
+
+height, width = image.shape[:2]
+img_area = height * width
 
 cv2.namedWindow('Road Segmentation')
 
@@ -36,11 +40,21 @@ while True:
     kernel_close = np.ones((close_k, close_k), np.uint8)
     opened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
     cleaned = cv2.morphologyEx(opened, cv2.MORPH_CLOSE, kernel_close)
-
-    overlay = image.copy()
-    overlay[cleaned > 0] = (0, 0, 255)
     
-    cv2.imshow('Road Segmentation', overlay)
+    contours, _ = cv2.findContours(cleaned, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    overlay = image.copy()
+
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        x, y, w, h = cv2.boundingRect(cnt)
+        aspect_ratio = h/float(w)
+        
+        if img_area*0.045 < area < img_area*0.3: 
+            if 0.77 < aspect_ratio < 1.33:
+                cv2.drawContours(overlay, [cnt], -1, (0, 0, 255), thickness=-1)
+    
+    combined = cv2.hconcat([overlay, cv2.cvtColor(cleaned, cv2.COLOR_GRAY2BGR), cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)])
+    cv2.imshow('Road Segmentation', combined)
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         # Save final parameters when quitting
@@ -49,3 +63,12 @@ while True:
         break
 
 cv2.destroyAllWindows()
+## Best Values without size shape filtering
+# H Low: 0
+# H High:180
+# S Low: 0
+# S High: 50
+# V Low: 10
+# V High: 255
+# Open K: 10
+# Close K: 4
