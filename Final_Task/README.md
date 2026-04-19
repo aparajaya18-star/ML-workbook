@@ -27,7 +27,13 @@
     - Road Segmentation:
         - Ver 1: Using sliders
         - Ver 2: Using Thresholding
-        - Ver 3: Using Random Forest     
+        - Ver 3: Using Random Forest
+            - Data Loading
+            - Extracting feature map per image (HSV mean + std, sobel, lbp(approx), color ratio, spatial features)
+            - Dividing image into patches and training RF 
+            - Using Validation set predictions to measure precision, recall etc     
+            - Predicting a random testing image and visualizing it for better insight
+            - Using random Train/val images to calculate mean IOU and Dice coefficient
 
 * Feature vector per patch — for each pixel, extract features from a small patch around it:
 * HSV mean and std (6 values)
