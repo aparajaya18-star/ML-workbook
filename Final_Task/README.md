@@ -71,3 +71,12 @@ Sobel gradient magnitude mean and std (2 values)
     - ST has no cycles (evenly divide into regions)
     - MaxST is ST with max weight ie ST with max no of outliers
 * BFS(Breadth First Search): Method to traverse a Tree such that all nodes present in the same level are traversed completely before traversing the next level.
+* LBP algorithm:
+    -   Choose a pixel in the image and select its neighboring pixels in a circular or rectangular region around it.
+    -   Take the threshold (intensity of the selected pixel, here it is 50).
+    -   Go through every neighboring pixel and check whether its intensity is greater than or less than the threshold.
+    Assign 1 to the neighboring pixel, if the intensity of the neighboring pixel is greater than the threshold.
+    Assign 0 to the neighboring pixel, if the intensity of the neighboring pixel is less than the threshold.
+    -   Combine the binary values for all neighboring pixels to obtain a binary code for the central pixel (Anti-clockwise, starting from the top left corner), and convert it to a decimal value.
+    -   Repeat steps 1–4 for each pixel in the image to obtain a binary code for each pixel.
+These LBP values are used to construct the histogram. By constructing a histogram of the LBP patterns, we can capture the frequency of occurrence of different texture patterns in the image. This histogram can then be used as a feature vector for texture classification tasks.
