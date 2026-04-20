@@ -34,7 +34,13 @@
             - Using Validation set predictions to measure precision, recall etc     
             - Predicting a random testing image and visualizing it for better insight
             - Using random Train/val images to calculate mean IOU and Dice coefficient
+        - Ver 4: Basic UNet
+            - Data Loading
+            - Encoder
+            - Bottleneck
+            - Decoder
 
+Random Forest: 
 * Feature vector per patch — for each pixel, extract features from a small patch around it:
 * HSV mean and std (6 values)
 LBP histogram for texture (typically 10-26 values depending on settings)
