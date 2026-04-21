@@ -47,7 +47,7 @@ pip install opencv-python networkx scikit-image torch torchvision scikit-learn m
 - Road segmentation quality affects A* path connectivity
 
 ## Dataset
-- Stitching: Custom aerial/satellite image fragments
+- Stitching: Aerial/satellite image fragments from Kaggle
 - Road Segmentation: DeepGlobe Road Extraction Dataset
 
 ## Attempted Approaches (Road Segmentation)
