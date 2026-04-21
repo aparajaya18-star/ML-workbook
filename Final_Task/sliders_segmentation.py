@@ -1,3 +1,5 @@
+# Using sliders to find best HSV values and kernel size to segment road from background 
+
 import cv2
 import numpy as np
 
@@ -63,6 +65,7 @@ while True:
         break
 
 cv2.destroyAllWindows()
+
 ## Best Values without size shape filtering
 # H Low: 0
 # H High:180
