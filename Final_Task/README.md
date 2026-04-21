@@ -1,55 +1,64 @@
 # Final Task - MaptheMap      
-### Approach:     
-* Orthomosaicking - PBIM (Patch Based Image Mosaicking) 
-* Dataset:      
-    - Cloud cover       - NA
-    - Lens Distortion   - NA
-    - Blur              - Somewhat
-    - Size              - 10 to 40 images
-* Recent attempts: Tried sliders as well as Image thresholding for road segmentation but both required a lot of tuning each time a different image was tested (Bad Generalization)
-* Current Pipeline:
-    - Image Stitching:
-        - Find features using SIFT
-        - Matching features using BFmatcher    
-        - Sorting matches using Lowe's ratio
-        - RANSAC for geometric verification
-        - Display similarity graph using NetworkX  
-        - Use Community detection to group images into regions  
-        - Use MaxST to find stitching order  
-        - Warp images using homography and Global canvas pre-computation (using corner projection)
-        - Blend images using feather blending
-        - Repeat the same for both regional and global  
-    - Converting to 2D map:
-        - Check if map needs orthorectification (Check amount of black pixels near boundary)
-        - Detect warped boundary of the image
-        - Apply homography to map image such that warped rectangle becomes true rectangle
-        - Recheck orthorectification and return original image if unsuccessful
-    - Road Segmentation:
-        - Ver 1: Using sliders
-        - Ver 2: Using Thresholding
-        - Ver 3: Using Random Forest
-            - Data Loading
-            - Extracting feature map per image (HSV mean + std, sobel, lbp(approx), color ratio, spatial features)
-            - Dividing image into patches and training RF 
-            - Using Validation set predictions to measure precision, recall etc     
-            - Predicting a random testing image and visualizing it for better insight
-            - Using random Train/val images to calculate mean IOU and Dice coefficient
-        - Ver 4: Basic UNet
-            - Data Loading
-            - Encoder
-            - Bottleneck
-            - Decoder
 
-Random Forest: 
-* Feature vector per patch — for each pixel, extract features from a small patch around it:
-* HSV mean and std (6 values)
-LBP histogram for texture (typically 10-26 values depending on settings)
-Sobel gradient magnitude mean and std (2 values)
-* Labels from DeepGlobe — each training image has a _mask.png. Roads are labeled as white (255,255,255), everything else black. You convert this to binary 0/1.
-* Training — sample balanced patches from DeepGlobe images (equal road/non-road), extract features, train Random Forest.
-* Inference — slide over your stitched map, extract same features per patch, predict road/non-road.
+## Overview
+An end-to-end pipeline for stitching fragmented aerial/satellite images into 
+seamless 2D maps, segmenting roads, and computing shortest paths.
 
-### Researched/Possible solutions:
+## Setup
+pip install opencv-python networkx scikit-image torch torchvision 
+scikit-learn matplotlib scikit-image albumentations
+
+## How to Run
+1. Place input images in Datasets/dataset_6/
+2. Run PBIM.ipynb — produces topdown_image.png
+3. Run Unet_segmentation.ipynb — produces segmented_mask.png
+4. Run astar.ipynb — set START/END coordinates at top of notebook
+
+## Pipeline
+### Phase 1: Image Grouping
+- SIFT feature extraction
+- BFMatcher + Lowe's ratio test + RANSAC geometric verification
+- Similarity graph → Louvain community detection
+
+### Phase 2: Image Stitching  
+- Maximum spanning tree → BFS stitching order
+- Global canvas pre-computation via corner projection
+- Feather blending for seamless output
+- Two-level stitching: regional then global
+
+### Phase 3: Orthorectification
+- Black pixel boundary detection
+- Convex hull approximation → perspective transform
+
+### Phase 4: Road Segmentation
+- UNet trained on DeepGlobe dataset (1000 images, 256×256)
+- BCE + Dice loss, pos_weight for class imbalance
+- Best Dice: ~0.40 on validation set
+
+### Bonus: Shortest Path (A*)
+- A* pathfinding on segmented road mask
+- Snap-to-road for robust start/end point handling  
+- Diagonal movement with corner-cutting prevention
+- **Note:** Coordinates are specified directly in the stitched map space. 
+  The intended implementation would accept coordinates from original fragmented images and map them to the final stitched canvas via cumulative homography — not completed due to time constraints.
+
+## Known Limitations
+- Repeated landmarks cause false matches in feature-based grouping
+- Global stitching has lower inlier counts on blended regional maps
+- UNet performance dependent on domain similarity to DeepGlobe
+- Road segmentation quality affects A* path connectivity
+
+## Dataset
+- Stitching: Custom aerial/satellite image fragments
+- Road Segmentation: DeepGlobe Road Extraction Dataset
+
+## Attempted Approaches (Road Segmentation)
+- **HSV Sliders:** Interactive OpenCV trackbar tuning — good intuition building but required manual retuning per image (poor generalization)
+- **Thresholding (Otsu/Adaptive):** Applied on saturation channel — fast but couldn't distinguish roads from same-colored rooftops/shadows
+- **Random Forest:** Patch-based classification with HSV, LBP, Sobel features — 81% accuracy but limited by hand-crafted feature expressiveness
+- **UNet (Final):** Encoder-decoder with skip connections trained on DeepGlobe — best generalization, ~0.40 Dice on validation set      
+
+### Concepts/Notes 
 * Spatially Varying Warping
     - Methods: APAP,SPHP and AANAP
     - useful when there is less parallax 
@@ -61,15 +70,9 @@ Sobel gradient magnitude mean and std (2 values)
     - useful when there is greater parallax
     - Best seam is found for better spatial preservation after warping  
     - SEAGULL: [https://link.springer.com/chapter/10.1007/978-3-319-46487-9_23]
-    - Perception-based seam cutting: [https://link.springer.com/article/10.1007/s11760-018-1241-9]
-
-### Changes to be made:
-- Maybe different pipeline(Order of region division and image stitching + no of times it's grouped)
-- Set min parameters, sometimes group is too small in communities
-- Is distinct community grouping really necessary for my pipeline since we are grouping the same map(either diff pipeline with multiple maps or no community division allow overlap in regions for singular map)
-- Have an outlier class/group for images that don't fit into any map since dataset might be noisy       
+    - Perception-based seam cutting: [https://link.springer.com/article/10.1007/s11760-018-1241-9]    
         
-### Concepts/Notes  
+ 
 * BFMatcher: Compares every descriptor in 2 images and finds best match (Using Hamming distance for ORB [descriptor type = Binary])    
 * Lowe's Ratio: Checks if best match is better than second best or if both are similar i.e. best match is just best among bad matches (dist_match1/dist_match2 < Threshold -> 0.7 to 0. 8)    
 * RANSAC (RANdom SAmple Consensus): Finds geometrically consistent matches. Maps points from one planar image to another.
