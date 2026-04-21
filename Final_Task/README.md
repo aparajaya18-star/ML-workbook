@@ -1,18 +1,16 @@
 # Final Task - MaptheMap      
 
 ## Overview
-An end-to-end pipeline for stitching fragmented aerial/satellite images into 
-seamless 2D maps, segmenting roads, and computing shortest paths.
+An end-to-end pipeline for stitching fragmented aerial/satellite images into seamless 2D maps, segmenting roads, and computing shortest paths.
 
 ## Setup
-pip install opencv-python networkx scikit-image torch torchvision 
-scikit-learn matplotlib scikit-image albumentations
+pip install opencv-python networkx scikit-image torch torchvision scikit-learn matplotlib scikit-image albumentations
 
 ## How to Run
 1. Place input images in Datasets/dataset_6
-2. Run PBIM.ipynb — produces topdown_image.png
+2. Run stitching.ipynb — produces topdown_image.png
 3. Run Unet_segmentation.ipynb — produces segmented_mask.png
-4. Run astar.ipynb — set START/END coordinates at top of notebook
+4. Run pathfinding.ipynb — set START/END coordinates at top of notebook
 
 ## Pipeline
 ### Phase 1: Image Grouping
